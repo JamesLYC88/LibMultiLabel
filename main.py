@@ -48,6 +48,8 @@ def get_config():
                         help='Whether to shuffle training data before each epoch (default: %(default)s)')
     parser.add_argument('--merge_train_val', action='store_true',
                         help='Whether to merge the training and validation data. (default: %(default)s)')
+    parser.add_argument('--keep_val', action='store_true',
+                        help='Whether to keep validation data after merge the training and validation data. (default: %(default)s)')
     parser.add_argument('--include_test_labels', action='store_true',
                         help='Whether to include labels in the test dataset. (default: %(default)s)')
 
@@ -86,6 +88,10 @@ def get_config():
                         help='Metrics to monitor while validating (default: %(default)s)')
     parser.add_argument('--val_metric', default='P@1',
                         help='The metric to monitor for early stopping (default: %(default)s)')
+    parser.add_argument('--mode', default='max', choices=['min', 'max'],
+                        help='Determines whether objective is minimizing or maximizing the metric attribute. (default: %(default)s)')
+    parser.add_argument('--val_metric_threshold', default=None,
+                        help='The threshold of the metric to monitor for early stopping (default: %(default)s)')
 
     # pretrained vocab / embeddings
     parser.add_argument('--vocab_file', type=str,
@@ -137,6 +143,16 @@ def get_config():
                         help="""If you are trying to specify network config such as dropout or activation, use a yaml file instead.
                                 See example config for more information (https://github.com/ASUS-AICS/LibMultiLabel/tree/master/example_config)')""")
 
+    # retrain
+    parser.add_argument('--retrain_alg', default=None, choices=['fixed', 'optimal', 'function'],
+                        help='Retrain algorithms (default: %(default)s)')
+    parser.add_argument('--train_checkpoint_dir', default=None,
+                        help='The directory to save checkpoints and logs in training (default: %(default)s)')
+    parser.add_argument('--retrain_val_metric', default='Loss',
+                        help='The metric to monitor for early stopping in retraining (default: %(default)s)')
+    parser.add_argument('--retrain_mode', default='min', choices=['min', 'max'],
+                        help='Determines whether objective is minimizing or maximizing the metric attribute in retraining. (default: %(default)s)')
+
     parser.set_defaults(**config)
     args = parser.parse_args()
     config = AttributeDict(vars(args))
@@ -171,6 +187,90 @@ def check_config(config):
         raise ValueError('--eval is specified but there is no test data set')
 
 
+def get_optimal_epochs(checkpoint_dir, val_metric, mode):
+    """Get the number of epochs at the point of optimal validation performance.
+
+    Args:
+        checkpoint_dir (str): The directory to save checkpoints and logs.
+        val_metric (str): The metric to monitor for early stopping.
+        mode (str): Determines whether objective is minimizing or maximizing the metric attribute.
+    """
+
+    log_path = os.path.join(checkpoint_dir, 'logs.json')
+    if not os.path.isfile(log_path):
+        raise FileNotFoundError("The checkpoint directory does not contain a log.")
+
+    import json
+    with open(log_path) as fp:
+        log = json.load(fp)
+
+    import numpy as np
+    log_metric = np.array([l[val_metric] for l in log['val']])
+    optimal_idx = log_metric.argmax() if mode == 'max' else log_metric.argmin()
+    optimal_epochs = optimal_idx.item() + 1  # plus 1 for epochs
+
+    return optimal_epochs
+
+
+def inference_train(config):
+    """Inference the model obtained after hyperparameter search on the training data.
+
+    Args:
+        config (AttributeDict): Config of the experiment from `get_args`.
+    """
+
+    import copy
+    inference_config = copy.deepcopy(config)
+    inference_config.test_path = config.train_path
+    inference_config.checkpoint_path = os.path.join(config.train_checkpoint_dir, 'best_model.ckpt')
+
+    # the naming here is used for easier collections of experimental results
+    inference_config.run_name = '{}_{}_{}_{}'.format(
+        config.data_name,
+        Path(config.config).stem if config.config else config.model_name,
+        'inference',
+        config.seed,
+    )
+    inference_config.checkpoint_dir = os.path.join(inference_config.result_dir, inference_config.run_name)
+    inference_config.log_path = os.path.join(inference_config.checkpoint_dir, 'logs.json')
+    inference_config.predict_out_path = os.path.join(inference_config.checkpoint_dir, 'predictions.txt')
+
+    logging.info(f'Inferencing with config: \n{inference_config}')
+    from torch_trainer import TorchTrainer
+    trainer = TorchTrainer(inference_config)  # initialize trainer
+    train_results = trainer.test()
+    train_metric = train_results[config.retrain_val_metric]
+
+    return train_metric
+
+
+def prepare_retrain(config):
+    """Prepare for the configuration for retraining by the specified retrain algorithm.
+
+    Args:
+        config (AttributeDict): Config of the experiment from `get_args`.
+    """
+
+    if config.retrain_alg == 'fixed':
+        config.merge_train_val = True
+    elif config.retrain_alg == 'optimal':
+        config.merge_train_val = True
+        config.epochs = get_optimal_epochs(config.train_checkpoint_dir, config.val_metric, config.mode)
+    elif config.retrain_alg == 'function':
+        train_metric = inference_train(config)
+        # data
+        config.merge_train_val = True
+        config.keep_val = True
+        # eval
+        config.val_metric = config.retrain_val_metric
+        config.mode = config.retrain_mode
+        config.val_metric_threshold = train_metric
+        # other
+        config.checkpoint_path = os.path.join(config.train_checkpoint_dir, 'best_model.ckpt')
+
+    logging.info(f'Retraining with config: \n{config}')
+
+
 def main():
     # Get config
     config = get_config()
@@ -187,6 +287,9 @@ def main():
         from linear_trainer import linear_run
         linear_run(config)
     else:
+        # train & retrain are mutually exclusive here for running experiments more effectively
+        if config.retrain_alg is not None:
+            prepare_retrain(config)
         from torch_trainer import TorchTrainer
         trainer = TorchTrainer(config)  # initialize trainer
         # train

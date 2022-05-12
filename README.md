@@ -17,3 +17,25 @@ If you have a different version of CUDA, follow the installation instructions fo
 
 ## Documentation
 See the documentation here: https://www.csie.ntu.edu.tw/~cjlin/libmultilabel
+
+## Retrain
+
+### Train (without retraining)
+```python3
+python3 main.py --config config/EUR-Lex/kim_cnn.yml
+```
+
+### Fixed-epochs
+```python3
+python3 main.py --config config/EUR-Lex/kim_cnn.yml --retrain_alg fixed
+```
+
+### Optimal-epochs
+```python3
+python3 main.py --config config/EUR-Lex/kim_cnn.yml --retrain_alg optimal --train_checkpoint_dir runs/EUR-Lex_kim_cnn_train
+```
+
+### Function-based
+```python3
+python3 main.py --config config/EUR-Lex/kim_cnn.yml --retrain_alg function --train_checkpoint_dir runs/EUR-Lex_kim_cnn_train
+```

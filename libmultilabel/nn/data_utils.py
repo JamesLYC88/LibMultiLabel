@@ -145,6 +145,7 @@ def load_datasets(
     val_path=None,
     val_size=0.2,
     merge_train_val=False,
+    keep_val=False,
     tokenize_text=True
 ):
     """Load data from the specified data paths (i.e., `train_path`, `test_path`, and `val_path`).
@@ -182,7 +183,8 @@ def load_datasets(
         datasets['train'] = datasets['train'] + datasets['val']
         for i in range(len(datasets['train'])):
             datasets['train'][i]['index'] = i
-        del datasets['val']
+        if not keep_val:
+            del datasets['val']
         gc.collect()
 
     msg = ' / '.join(f'{k}: {len(v)}' for k, v in datasets.items())

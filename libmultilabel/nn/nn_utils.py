@@ -111,7 +111,8 @@ def init_trainer(checkpoint_dir,
                  limit_val_batches=1.0,
                  limit_test_batches=1.0,
                  search_params=False,
-                 save_checkpoints=True):
+                 save_checkpoints=True,
+                 val_metric_threshold=None):
     """Initialize a torch lightning trainer.
 
     Args:
@@ -132,7 +133,10 @@ def init_trainer(checkpoint_dir,
         pl.Trainer: A torch lightning trainer.
     """
 
-    callbacks = [EarlyStopping(patience=patience, monitor=val_metric, mode=mode)]
+    if val_metric_threshold is not None:
+        callbacks = [EarlyStopping(monitor=val_metric, mode=mode, stopping_threshold=val_metric_threshold)]
+    else:
+        callbacks = [EarlyStopping(patience=patience, monitor=val_metric, mode=mode)]
     if save_checkpoints:
         callbacks += [ModelCheckpoint(dirpath=checkpoint_dir, filename='best_model',
                                       save_last=True, save_top_k=1,

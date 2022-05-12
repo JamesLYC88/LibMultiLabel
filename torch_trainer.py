@@ -55,6 +55,7 @@ class TorchTrainer:
                 val_path=config.val_path,
                 val_size=config.val_size,
                 merge_train_val=config.merge_train_val,
+                keep_val=config.keep_val,
                 tokenize_text=tokenize_text
             )
         else:
@@ -67,6 +68,7 @@ class TorchTrainer:
         self.trainer = init_trainer(checkpoint_dir=self.checkpoint_dir,
                                     epochs=config.epochs,
                                     patience=config.patience,
+                                    mode=config.mode,
                                     val_metric=config.val_metric,
                                     silent=config.silent,
                                     use_cpu=config.cpu,
@@ -74,7 +76,8 @@ class TorchTrainer:
                                     limit_val_batches=config.limit_val_batches,
                                     limit_test_batches=config.limit_test_batches,
                                     search_params=search_params,
-                                    save_checkpoints=save_checkpoints)
+                                    save_checkpoints=save_checkpoints,
+                                    val_metric_threshold=config.val_metric_threshold)
         callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, ModelCheckpoint)]
         self.checkpoint_callback = callbacks[0] if callbacks else None
 
@@ -99,12 +102,14 @@ class TorchTrainer:
                 results will be logged.
             checkpoint_path (str): The checkpoint to warm-up with.
         """
-        if 'checkpoint_path' in self.config and self.config.checkpoint_path is not None:
+        # avoid overwrite checkpoint_path
+        if checkpoint_path is None and 'checkpoint_path' in self.config and self.config.checkpoint_path is not None:
             checkpoint_path = self.config.checkpoint_path
 
         if checkpoint_path is not None:
             logging.info(f'Loading model from `{checkpoint_path}`...')
             self.model = Model.load_from_checkpoint(checkpoint_path)
+            self.model.log_path = self.log_path # correct log_path
         else:
             logging.info('Initialize model from scratch.')
             if self.config.embed_file is not None:

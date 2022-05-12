@@ -129,7 +129,8 @@ class MultiLabelModel(pl.LightningModule):
         return self.eval_metric.update(
             preds=batch_parts['pred_scores'],
             target=batch_parts['target'],
-            indexes=indexes
+            indexes=indexes,
+            loss=batch_parts['loss']
         )
 
     def _shared_eval_epoch_end(self, step_outputs, split):
