@@ -129,6 +129,10 @@ def add_all_arguments(parser):
                         help="If you are trying to specify network config such as dropout or activation, use a yaml file instead. "
                              "See example configs in example_config")
 
+    # LexGLUE
+    parser.add_argument('--zero', action='store_true')
+    parser.add_argument('--multi_class', action='store_true')
+
 
 def get_config():
     parser = argparse.ArgumentParser(
@@ -208,8 +212,37 @@ def main():
         if 'test' in trainer.datasets:
             trainer.test()
 
+    return config
+
+
+def dump_time_to_log(log_path, time):
+    """Write time to log.
+    Args:
+        log_path(str): path to log path
+        time (str): time in seconds
+    """
+    assert os.path.isfile(log_path)
+    with open(log_path) as fp:
+        import json
+        result = json.load(fp)
+
+    if time >= 60 * 60:
+        h, s = divmod(time, 60 * 60)
+        formatted_time = f'{h}h {s/60:.0f}m'
+    elif time >= 60:
+        m, s = divmod(time, 60)
+        formatted_time = f'{m}m {s}s'
+    else:
+        formatted_time = f'{time}s'
+    result['time'] = formatted_time
+
+    with open(log_path, 'w') as fp:
+        json.dump(result, fp)
+
+    print(f'Wall time: {formatted_time}')
 
 if __name__ == '__main__':
     wall_time = Timer()
-    main()
-    print(f'Wall time: {wall_time.time():.2f} (s)')
+    config = main()
+    dump_time_to_log(config.log_path, round(wall_time.time()))
+    # print(f'Wall time: {wall_time.time():.2f} (s)')
