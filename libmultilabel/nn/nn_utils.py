@@ -50,7 +50,8 @@ def init_model(model_name,
                silent=False,
                save_k_predictions=0,
                zero=False,
-               multi_class=False):
+               multi_class=False,
+               enable_ce_loss=False):
     """Initialize a `Model` class for initializing and training a neural network.
 
     Args:
@@ -73,6 +74,7 @@ def init_model(model_name,
         save_k_predictions (int, optional): Save top k predictions on test set. Defaults to 0.
         zero (bool, optional)
         multi_class (bool, optional)
+        enable_ce_loss (bool, optional)
 
     Returns:
         Model: A class that implements `MultiLabelModel` for initializing and training a neural network.
@@ -104,7 +106,8 @@ def init_model(model_name,
         silent=silent,
         save_k_predictions=save_k_predictions,
         zero=zero,
-        multi_class=multi_class
+        multi_class=multi_class,
+        enable_ce_loss=enable_ce_loss
     )
     return model
 

@@ -197,6 +197,7 @@ class Model(MultiLabelModel):
         embed_vecs (torch.Tensor): The pre-trained word vectors of shape (vocab_size, embed_dim).
         network (nn.Module): Network (i.e., CAML, KimCNN, or XMLCNN).
         log_path (str): Path to a directory holding the log files and models.
+        enable_ce_loss (bool)
     """
     def __init__(
         self,
@@ -205,6 +206,7 @@ class Model(MultiLabelModel):
         embed_vecs,
         network,
         log_path=None,
+        enable_ce_loss=False,
         **kwargs
     ):
         super().__init__(num_classes=len(classes), log_path=log_path, **kwargs)
@@ -213,6 +215,10 @@ class Model(MultiLabelModel):
         self.embed_vecs = embed_vecs
         self.classes = classes
         self.network = network
+        if not enable_ce_loss:
+            self.loss_fn = F.binary_cross_entropy_with_logits
+        else:
+            self.loss_fn = F.cross_entropy
 
     def shared_step(self, batch):
         """Return loss and predicted logits of the network.
@@ -227,5 +233,5 @@ class Model(MultiLabelModel):
         target_labels = batch['label']
         outputs = self.network(batch)
         pred_logits = outputs['logits']
-        loss = F.binary_cross_entropy_with_logits(pred_logits, target_labels.float())
+        loss = self.loss_fn(pred_logits, target_labels.float())
         return loss, pred_logits

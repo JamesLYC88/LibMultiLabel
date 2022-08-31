@@ -133,6 +133,7 @@ def add_all_arguments(parser):
     parser.add_argument('--zero', action='store_true')
     parser.add_argument('--multi_class', action='store_true')
     parser.add_argument('--add_special_tokens', action='store_true')
+    parser.add_argument('--enable_ce_loss', action='store_true')
 
 
 def get_config():

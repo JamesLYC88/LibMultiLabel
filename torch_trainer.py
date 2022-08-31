@@ -150,7 +150,8 @@ class TorchTrainer:
                                     silent=self.config.silent,
                                     save_k_predictions=self.config.save_k_predictions,
                                     zero=self.config.zero,
-                                    multi_class=self.config.multi_class
+                                    multi_class=self.config.multi_class,
+                                    enable_ce_loss=self.config.enable_ce_loss
                                    )
 
     def _get_dataset_loader(self, split, shuffle=False):
