@@ -148,7 +148,9 @@ class TorchTrainer:
                                     metric_threshold=self.config.metric_threshold,
                                     monitor_metrics=self.config.monitor_metrics,
                                     silent=self.config.silent,
-                                    save_k_predictions=self.config.save_k_predictions
+                                    save_k_predictions=self.config.save_k_predictions,
+                                    zero=self.config.zero,
+                                    multi_class=self.config.multi_class
                                    )
 
     def _get_dataset_loader(self, split, shuffle=False):

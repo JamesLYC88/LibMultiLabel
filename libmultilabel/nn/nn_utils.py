@@ -48,7 +48,9 @@ def init_model(model_name,
                metric_threshold=0.5,
                monitor_metrics=None,
                silent=False,
-               save_k_predictions=0):
+               save_k_predictions=0,
+               zero=False,
+               multi_class=False):
     """Initialize a `Model` class for initializing and training a neural network.
 
     Args:
@@ -69,6 +71,8 @@ def init_model(model_name,
         monitor_metrics (list, optional): Metrics to monitor while validating. Defaults to None.
         silent (bool, optional): Enable silent mode. Defaults to False.
         save_k_predictions (int, optional): Save top k predictions on test set. Defaults to 0.
+        zero (bool, optional)
+        multi_class (bool, optional)
 
     Returns:
         Model: A class that implements `MultiLabelModel` for initializing and training a neural network.
@@ -98,7 +102,9 @@ def init_model(model_name,
         metric_threshold=metric_threshold,
         monitor_metrics=monitor_metrics,
         silent=silent,
-        save_k_predictions=save_k_predictions
+        save_k_predictions=save_k_predictions,
+        zero=zero,
+        multi_class=multi_class
     )
     return model
 

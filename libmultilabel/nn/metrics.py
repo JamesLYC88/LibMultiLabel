@@ -137,7 +137,63 @@ class MacroF1(Metric):
             return torch.mean(label_f1)
 
 
-def get_metrics(metric_threshold, monitor_metrics, num_classes):
+def add_zero_class(labels):
+    augmented_labels = torch.zeros((len(labels), len(labels[0]) + 1), dtype=torch.int32).to(labels.device)
+    augmented_labels[:, :-1] = labels
+    augmented_labels[:, -1] = (torch.sum(labels, axis=1) == 0).type(torch.int32)
+    return augmented_labels
+
+
+class F1(Metric):
+    full_state_update = False
+
+    def __init__(
+        self,
+        num_classes,
+        metric_threshold,
+        average,
+        zero,
+        multi_class
+    ):
+        super().__init__()
+        self.metric_threshold = metric_threshold
+        if average not in {'macro', 'micro', 'another-macro'}:
+            raise ValueError('unsupported average')
+        self.average = average
+        self.zero = zero
+        if self.zero:
+            num_classes += 1
+        self.multi_class = multi_class
+        self.add_state("preds_sum", default=torch.zeros(num_classes, dtype=torch.double))
+        self.add_state("target_sum", default=torch.zeros(num_classes, dtype=torch.double))
+        self.add_state("tp_sum", default=torch.zeros(num_classes, dtype=torch.double))
+
+    def update(self, preds, target):
+        if self.multi_class:
+            preds = torch.eye(preds.shape[1])[preds.argmax(1)].type(torch.int32).to(preds.device)
+        else:
+            preds = torch.where(preds > self.metric_threshold, 1, 0)
+        if self.zero:
+            preds = add_zero_class(preds)
+            target = add_zero_class(target)
+        assert preds.shape == target.shape
+        self.preds_sum = torch.add(self.preds_sum, preds.sum(dim=0))
+        self.target_sum = torch.add(self.target_sum, target.sum(dim=0))
+        self.tp_sum = torch.add(self.tp_sum, (preds & target).sum(dim=0))
+
+    def compute(self):
+        if self.average == 'another-macro':
+            macro_prec = torch.mean(torch.nan_to_num(self.tp_sum / self.preds_sum, posinf=0.))
+            macro_recall = torch.mean(torch.nan_to_num(self.tp_sum / self.target_sum, posinf=0.))
+            return 2 * (macro_prec * macro_recall) / (macro_prec + macro_recall + 1e-10)
+        elif self.average == 'macro':
+            label_f1 = 2 * self.tp_sum / (self.preds_sum + self.target_sum + 1e-10)
+            return torch.mean(label_f1)
+        elif self.average == 'micro':
+            return 2 * torch.sum(self.tp_sum) / (torch.sum(self.preds_sum + self.target_sum) + 1e-10)
+
+
+def get_metrics(metric_threshold, monitor_metrics, num_classes, zero, multi_class):
     """Map monitor metrics to the corresponding classes defined in `torchmetrics.Metric`
     (https://torchmetrics.readthedocs.io/en/latest/references/modules.html).
 
@@ -145,6 +201,8 @@ def get_metrics(metric_threshold, monitor_metrics, num_classes):
         metric_threshold (float): Threshold to monitor for metrics.
         monitor_metrics (list): Metrics to monitor while validating.
         num_classes (int): Total number of classes.
+        zero (bool)
+        multi_class (bool)
 
     Raises:
         ValueError: The metric is invalid if:
@@ -186,9 +244,14 @@ def get_metrics(metric_threshold, monitor_metrics, num_classes):
                 # which can lead to CUDA out of memory.
                 # metrics[metric] = RetrievalNormalizedDCG(k=top_k)
         elif metric == 'Another-Macro-F1':
-            metrics[metric] = MacroF1(num_classes, metric_threshold, another_macro_f1=True)
+            metrics[metric] = F1(num_classes, metric_threshold, average='another-macro',
+                                 zero=zero, multi_class=multi_class)
         elif metric == 'Macro-F1':
-            metrics[metric] = MacroF1(num_classes, metric_threshold)
+            metrics[metric] = F1(num_classes, metric_threshold, average='macro',
+                                 zero=zero, multi_class=multi_class)
+        elif metric == 'Micro-F1':
+            metrics[metric] = F1(num_classes, metric_threshold, average='micro',
+                                 zero=zero, multi_class=multi_class)
         elif match_metric:
             average_type = match_metric.group(1).lower() # Micro
             metric_type = match_metric.group(2) # Precision, Recall, or F1

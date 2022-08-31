@@ -24,6 +24,8 @@ class MultiLabelModel(pl.LightningModule):
         log_path (str): Path to a directory holding the log files and models.
         silent (bool, optional): Enable silent mode. Defaults to False.
         save_k_predictions (int, optional): Save top k predictions on test set. Defaults to 0.
+        zero (bool, optional)
+        multi_class (bool, optional)
     """
 
     def __init__(
@@ -38,6 +40,8 @@ class MultiLabelModel(pl.LightningModule):
         log_path=None,
         silent=False,
         save_k_predictions=0,
+        zero=False,
+        multi_class=False,
         **kwargs
     ):
         super().__init__()
@@ -54,7 +58,8 @@ class MultiLabelModel(pl.LightningModule):
         self.save_k_predictions = save_k_predictions
 
         # metrics for evaluation
-        self.eval_metric = get_metrics(metric_threshold, monitor_metrics, num_classes)
+        self.eval_metric = get_metrics(metric_threshold, monitor_metrics, num_classes,
+                                       zero, multi_class)
 
     @abstractmethod
     def shared_step(self, batch):
