@@ -174,6 +174,7 @@ def retrain_best_model(exp_name, best_config, result_dir, merge_train_val=False)
     os.makedirs(checkpoint_dir, exist_ok=True)
     with open(os.path.join(checkpoint_dir, 'params.yml'), 'w') as fp:
         yaml.dump(dict(best_config), fp)
+    quit()  # no need to re-train for this stage
     best_config = AttributeDict(best_config)
     best_config.run_name = '_'.join(exp_name.split('_')[:-1]) + '_best'
     best_config.checkpoint_dir = checkpoint_dir

@@ -27,6 +27,7 @@ def get_config():
                         help='The directory to load data (default: %(default)s)')
     parser.add_argument('--result_dir', default='./runs',
                         help='The directory to save checkpoints and logs (default: %(default)s)')
+    parser.add_argument('--run_name', default=None)
 
     # data
     parser.add_argument('--data_name', default='rcv1',
@@ -52,6 +53,8 @@ def get_config():
                         help='Whether to keep validation data after merge the training and validation data. (default: %(default)s)')
     parser.add_argument('--include_test_labels', action='store_true',
                         help='Whether to include labels in the test dataset. (default: %(default)s)')
+    parser.add_argument('--add_special_tokens', action='store_true',
+                        help='Whether to add the special tokens for inputs of the transformer-based language model. (default: %(default)s)')
 
     # train
     parser.add_argument('--seed', type=int,
@@ -157,11 +160,12 @@ def get_config():
     args = parser.parse_args()
     config = AttributeDict(vars(args))
 
-    config.run_name = '{}_{}_{}'.format(
-        config.data_name,
-        Path(config.config).stem if config.config else config.model_name,
-        datetime.now().strftime('%Y%m%d%H%M%S'),
-    )
+    if config.run_name is None:
+        config.run_name = '{}_{}_{}'.format(
+            config.data_name,
+            Path(config.config).stem if config.config else config.model_name,
+            datetime.now().strftime('%Y%m%d%H%M%S'),
+        )
     config.checkpoint_dir = os.path.join(config.result_dir, config.run_name)
     config.log_path = os.path.join(config.checkpoint_dir, 'logs.json')
     config.predict_out_path = config.predict_out_path or os.path.join(config.checkpoint_dir, 'predictions.txt')

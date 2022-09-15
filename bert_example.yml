@@ -1,0 +1,33 @@
+# data
+data_dir:
+data_name:
+min_vocab_freq:
+max_seq_length:
+include_test_labels:
+add_special_tokens:
+
+# train
+seed:
+epochs:
+batch_size:
+optimizer:
+learning_rate:
+weight_decay:
+patience:
+shuffle:
+
+# eval
+eval_batch_size:
+monitor_metrics:
+val_metric:
+
+# model
+model_name:
+init_weight:
+network_config:
+  dropout:
+  lm_weight:
+  lm_window:
+
+# pretrained vocab / embeddings
+embed_file:
