@@ -8,7 +8,7 @@ add_special_tokens: true
 
 # train
 seed: 1337
-epochs: 50
+epochs: 20
 batch_size: 8
 optimizer: adamw
 learning_rate: ['grid_search', [0.00003, 0.00005]]

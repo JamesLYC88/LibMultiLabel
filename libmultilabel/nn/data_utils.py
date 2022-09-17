@@ -106,7 +106,8 @@ def get_dataset_loader(
     Returns:
         torch.utils.data.DataLoader: A pytorch DataLoader.
     """
-    dataset = TextDataset(data, word_dict, classes, max_seq_length, tokenizer=tokenizer)
+    dataset = TextDataset(data, word_dict, classes, max_seq_length, tokenizer=tokenizer,
+                          add_special_tokens=add_special_tokens)
     dataset_loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
