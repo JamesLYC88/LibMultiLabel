@@ -2,7 +2,7 @@
 data_dir: data/unfair_tos
 data_name: unfair_tos
 min_vocab_freq: 1
-max_seq_length: 128
+max_seq_length: 512
 include_test_labels: true
 add_special_tokens: true
 
@@ -11,7 +11,7 @@ seed: 1337
 epochs: 15
 batch_size: 8
 optimizer: adamw
-learning_rate: 0.00003
+learning_rate: 0.00005
 weight_decay: 0
 patience: 5
 
