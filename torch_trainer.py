@@ -79,7 +79,8 @@ class TorchTrainer:
                                     limit_val_batches=config.limit_val_batches,
                                     limit_test_batches=config.limit_test_batches,
                                     search_params=search_params,
-                                    save_checkpoints=save_checkpoints)
+                                    save_checkpoints=save_checkpoints,
+                                    accumulate_grad_batches=config.accumulate_grad_batches)
         callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, ModelCheckpoint)]
         self.checkpoint_callback = callbacks[0] if callbacks else None
 
@@ -151,7 +152,8 @@ class TorchTrainer:
                                     save_k_predictions=self.config.save_k_predictions,
                                     zero=self.config.zero,
                                     multi_class=self.config.multi_class,
-                                    enable_ce_loss=self.config.enable_ce_loss
+                                    enable_ce_loss=self.config.enable_ce_loss,
+                                    hierarchical=self.config.hierarchical
                                    )
 
     def _get_dataset_loader(self, split, shuffle=False):
@@ -174,7 +176,8 @@ class TorchTrainer:
             shuffle=shuffle,
             data_workers=self.config.data_workers,
             tokenizer=self.tokenizer,
-            add_special_tokens=self.config.add_special_tokens
+            add_special_tokens=self.config.add_special_tokens,
+            hierarchical=self.config.hierarchical
         )
 
     def train(self):

@@ -51,7 +51,8 @@ def init_model(model_name,
                save_k_predictions=0,
                zero=False,
                multi_class=False,
-               enable_ce_loss=False):
+               enable_ce_loss=False,
+               hierarchical=False):
     """Initialize a `Model` class for initializing and training a neural network.
 
     Args:
@@ -75,6 +76,7 @@ def init_model(model_name,
         zero (bool, optional)
         multi_class (bool, optional)
         enable_ce_loss (bool, optional)
+        hierarchical (bool, optional)
 
     Returns:
         Model: A class that implements `MultiLabelModel` for initializing and training a neural network.
@@ -83,6 +85,7 @@ def init_model(model_name,
     network = getattr(networks, model_name)(
         embed_vecs=embed_vecs,
         num_classes=len(classes),
+        hierarchical=hierarchical,
         **dict(network_config)
     )
 
@@ -123,7 +126,8 @@ def init_trainer(checkpoint_dir,
                  limit_val_batches=1.0,
                  limit_test_batches=1.0,
                  search_params=False,
-                 save_checkpoints=True):
+                 save_checkpoints=True,
+                 accumulate_grad_batches=1):
     """Initialize a torch lightning trainer.
 
     Args:
@@ -140,6 +144,7 @@ def init_trainer(checkpoint_dir,
         search_params (bool): Enable pytorch-lightning trainer to report the results to ray tune
             on validation end during hyperparameter search. Defaults to False.
         save_checkpoints (bool): Whether to save the last and the best checkpoint or not. Defaults to True.
+        accumulate_grad_batches (int)
 
     Returns:
         pl.Trainer: A torch lightning trainer.
@@ -162,6 +167,7 @@ def init_trainer(checkpoint_dir,
                          limit_train_batches=limit_train_batches,
                          limit_val_batches=limit_val_batches,
                          limit_test_batches=limit_test_batches,
+                         accumulate_grad_batches=accumulate_grad_batches,
                          deterministic=True)
     return trainer
 

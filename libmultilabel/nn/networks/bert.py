@@ -1,6 +1,8 @@
 import torch.nn as nn
 from transformers import AutoModelForSequenceClassification
 
+from .hierbert import HierarchicalBert
+
 
 class BERT(nn.Module):
     """BERT
@@ -13,14 +15,29 @@ class BERT(nn.Module):
         self,
         num_classes,
         lm_weight='bert-base-cased',
+        hierarchical=False,
+        max_segments=64,
+        max_seg_length=128,
         **kwargs
     ):
         super().__init__()
         self.lm = AutoModelForSequenceClassification.from_pretrained(lm_weight,
                                                                      num_labels=num_classes,
                                                                      torchscript=True)
+        self.hierarchical = hierarchical
+        if self.hierarchical:
+            segment_encoder = self.lm.bert
+            model_encoder = HierarchicalBert(encoder=segment_encoder,
+                                             max_segments=max_segments,
+                                             max_segment_length=max_seg_length)
+            self.lm.bert = model_encoder
 
     def forward(self, input):
-        input_ids = input['text'] # (batch_size, sequence_length)
-        x = self.lm(input_ids, attention_mask=input_ids != self.lm.config.pad_token_id)[0] # (batch_size, num_classes)
+        if self.hierarchical:
+            input_ids = input['input_ids']
+            attention_mask = input['attention_mask']
+            x = self.lm(input_ids, attention_mask=attention_mask)[0] # (batch_size, num_classes)
+        else:
+            input_ids = input['text'] # (batch_size, sequence_length)
+            x = self.lm(input_ids, attention_mask=input_ids != self.lm.config.pad_token_id)[0] # (batch_size, num_classes)
         return {'logits': x}
