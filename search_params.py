@@ -206,6 +206,7 @@ def retrain_best_model(exp_name, best_config, best_log_dir, merge_train_val):
     os.makedirs(checkpoint_dir, exist_ok=True)
     with open(os.path.join(checkpoint_dir, 'params.yml'), 'w') as fp:
         yaml.dump(dict(best_config), fp)
+    quit()  # do not need re-training
     best_config.run_name = '_'.join(exp_name.split('_')[:-1]) + '_best'
     best_config.checkpoint_dir = checkpoint_dir
     best_config.log_path = os.path.join(best_config.checkpoint_dir, 'logs.json')

@@ -9,11 +9,13 @@ class BERT(nn.Module):
 
     Args:
         num_classes (int): Total number of classes.
+        dropout (float): The dropout rate of the word embedding. Defaults to 0.1.
         lm_weight (str): Pretrained model name or path. Defaults to 'bert-base-cased'.
     """
     def __init__(
         self,
         num_classes,
+        dropout=0.1,
         lm_weight='bert-base-cased',
         hierarchical=False,
         max_segments=64,
@@ -23,6 +25,7 @@ class BERT(nn.Module):
         super().__init__()
         self.lm = AutoModelForSequenceClassification.from_pretrained(lm_weight,
                                                                      num_labels=num_classes,
+                                                                     hidden_dropout_prob=dropout,
                                                                      torchscript=True)
         self.hierarchical = hierarchical
         if self.hierarchical:
