@@ -8,16 +8,16 @@ add_special_tokens: true
 
 # train
 seed: 1337
-epochs: 20
+epochs: 15
 batch_size: 8
 optimizer: adamw
-learning_rate: 0.00003
-weight_decay: 0
+learning_rate: 5e-05
+weight_decay: 0.001
 patience: 5
 
 # eval
 eval_batch_size: 8
-monitor_metrics: ['Micro-F1', 'Macro-F1', 'Another-Macro-F1', 'P@1', 'P@5', 'RP@5', 'nDCG@5']
+monitor_metrics: ['Macro-F1', 'Micro-F1']
 val_metric: Micro-F1
 
 # model
@@ -25,6 +25,7 @@ model_name: BERT
 init_weight: null
 network_config:
   lm_weight: bert-base-uncased
+  dropout: 0.1
 
 # pretrained vocab / embeddings
 embed_file: null
