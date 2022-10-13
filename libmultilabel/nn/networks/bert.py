@@ -36,11 +36,7 @@ class BERT(nn.Module):
             self.lm.bert = model_encoder
 
     def forward(self, input):
-        if self.hierarchical:
-            input_ids = input['input_ids']
-            attention_mask = input['attention_mask']
-            x = self.lm(input_ids, attention_mask=attention_mask)[0] # (batch_size, num_classes)
-        else:
-            input_ids = input['text'] # (batch_size, sequence_length)
-            x = self.lm(input_ids, attention_mask=input_ids != self.lm.config.pad_token_id)[0] # (batch_size, num_classes)
+        input_ids = input['input_ids']
+        attention_mask = input['attention_mask']
+        x = self.lm(input_ids, attention_mask=attention_mask)[0] # (batch_size, num_classes)
         return {'logits': x}

@@ -23,7 +23,8 @@ class TextDataset(Dataset):
     """Class for text dataset"""
 
     def __init__(self, data, word_dict, classes, max_seq_length, tokenizer=None, add_special_tokens=False,
-                 hierarchical=False, max_segments=64, max_seg_length=128):
+                 hierarchical=False, max_segments=64, max_seg_length=128,
+                 enable_transformer_trainer=False, multi_class=False):
         self.data = data
         self.word_dict = word_dict
         self.classes = classes
@@ -37,6 +38,8 @@ class TextDataset(Dataset):
             self.max_segments = max_segments
             self.max_seg_length = max_seg_length
             self.case_template = [[0] * self.max_seg_length]
+        self.enable_transformer_trainer = enable_transformer_trainer
+        self.multi_class = multi_class
 
     def __len__(self):
         return len(self.data)
@@ -57,14 +60,23 @@ class TextDataset(Dataset):
                         self.max_segments - len(case_encodings['input_ids']))),
                     'attention_mask': torch.LongTensor(case_encodings['attention_mask'] + self.case_template * (
                         self.max_segments - len(case_encodings['attention_mask']))),
-                    'label': torch.IntTensor(self.label_binarizer.transform([data['label']])[0])
+                    'label': \
+                        torch.as_tensor(int(data['label'][0])) if self.enable_transformer_trainer and self.multi_class \
+                        else torch.IntTensor(self.label_binarizer.transform([data['label']])[0])
                 }
             else:
-                input_ids = self.tokenizer.encode(data['text'],
-                                                  add_special_tokens=self.add_special_tokens,
-                                                  padding='max_length',
-                                                  max_length=self.max_seq_length,
-                                                  truncation=True)
+                case_encodings = self.tokenizer(data['text'],
+                                                add_special_tokens=self.add_special_tokens,
+                                                padding='max_length',
+                                                max_length=self.max_seq_length,
+                                                truncation=True)
+                return {
+                    'input_ids': torch.LongTensor(case_encodings['input_ids']),
+                    'attention_mask': torch.LongTensor(case_encodings['attention_mask']),
+                    'label': \
+                        torch.as_tensor(int(data['label'][0])) if self.enable_transformer_trainer and self.multi_class \
+                        else torch.IntTensor(self.label_binarizer.transform([data['label']])[0])
+                }
         else:
             input_ids = [self.word_dict[word] for word in data['text']]
         return {
@@ -92,21 +104,19 @@ def generate_batch(data_batch):
     length_list = [len(data['text']) for data in data_batch]
     return {
         'text': pad_sequence(text_list, batch_first=True),
-        'label': torch.stack(label_list),
+        'labels': torch.stack(label_list),
         'length': torch.IntTensor(length_list)
     }
 
 
-def generate_hierarchical_batch(data_batch):
+def generate_transformer_batch(data_batch):
     input_ids_list = [data['input_ids'] for data in data_batch]
     attention_mask_list = [data['attention_mask'] for data in data_batch]
     label_list = [data['label'] for data in data_batch]
-    length_list = [len(data['input_ids']) for data in data_batch]
     return {
         'input_ids': torch.stack(input_ids_list),
         'attention_mask': torch.stack(attention_mask_list),
-        'label': torch.stack(label_list),
-        'length': torch.IntTensor(length_list)
+        'labels': torch.stack(label_list),
     }
 
 
@@ -121,7 +131,9 @@ def get_dataset_loader(
     data_workers=4,
     tokenizer=None,
     add_special_tokens=False,
-    hierarchical=False
+    hierarchical=False,
+    enable_transformer_trainer=False,
+    multi_class=False
 ):
     """Create a pytorch DataLoader.
 
@@ -139,13 +151,14 @@ def get_dataset_loader(
         torch.utils.data.DataLoader: A pytorch DataLoader.
     """
     dataset = TextDataset(data, word_dict, classes, max_seq_length, tokenizer=tokenizer,
-                          add_special_tokens=add_special_tokens, hierarchical=hierarchical)
+                          add_special_tokens=add_special_tokens, hierarchical=hierarchical,
+                          enable_transformer_trainer=enable_transformer_trainer, multi_class=multi_class)
     dataset_loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=data_workers,
-        collate_fn=generate_batch if not hierarchical else generate_hierarchical_batch,
+        collate_fn=generate_batch if tokenizer is None else generate_transformer_batch,
         pin_memory='cuda' in device.type,
     )
     return dataset_loader

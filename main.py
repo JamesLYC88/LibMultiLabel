@@ -136,6 +136,7 @@ def add_all_arguments(parser):
     parser.add_argument('--enable_ce_loss', action='store_true')
     parser.add_argument('--hierarchical', action='store_true')
     parser.add_argument('--accumulate_grad_batches', type=int, default=1)
+    parser.add_argument('--enable_transformer_trainer', action='store_true')
 
 
 def get_config():

@@ -122,7 +122,7 @@ class MultiLabelModel(pl.LightningModule):
         return {'batch_idx': batch_idx,
                 'loss': loss,
                 'pred_scores': torch.sigmoid(pred_logits),
-                'target': batch['label']}
+                'target': batch['labels']}
 
     def _shared_eval_step_end(self, batch_parts):
         batch_size, num_classes = batch_parts['target'].shape
@@ -230,7 +230,7 @@ class Model(MultiLabelModel):
             loss (torch.Tensor): Binary cross-entropy between target and predict logits.
             pred_logits (torch.Tensor): The predict logits (batch_size, num_classes).
         """
-        target_labels = batch['label']
+        target_labels = batch['labels']
         outputs = self.network(batch)
         pred_logits = outputs['logits']
         loss = self.loss_fn(pred_logits, target_labels.float())

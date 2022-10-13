@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 from libmultilabel.nn import data_utils
 from libmultilabel.nn.model import Model
-from libmultilabel.nn.nn_utils import init_device, init_model, init_trainer, set_seed
+from libmultilabel.nn.nn_utils import init_device, init_model, init_trainer
 from libmultilabel.common_utils import dump_log
 
 
@@ -41,7 +41,9 @@ class TorchTrainer:
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         # Set up seed & device
-        set_seed(seed=config.seed)
+        if not config.enable_transformer_trainer:
+            from libmultilabel.nn.nn_utils import set_seed
+            set_seed(seed=config.seed)
         self.device = init_device(use_cpu=config.cpu)
         self.config = config
 
@@ -69,20 +71,44 @@ class TorchTrainer:
                           embed_vecs=embed_vecs,
                           log_path=self.log_path,
                           checkpoint_path=config.checkpoint_path)
-        self.trainer = init_trainer(checkpoint_dir=self.checkpoint_dir,
-                                    epochs=config.epochs,
-                                    patience=config.patience,
-                                    val_metric=config.val_metric,
-                                    silent=config.silent,
-                                    use_cpu=config.cpu,
-                                    limit_train_batches=config.limit_train_batches,
-                                    limit_val_batches=config.limit_val_batches,
-                                    limit_test_batches=config.limit_test_batches,
-                                    search_params=search_params,
-                                    save_checkpoints=save_checkpoints,
-                                    accumulate_grad_batches=config.accumulate_grad_batches)
-        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, ModelCheckpoint)]
-        self.checkpoint_callback = callbacks[0] if callbacks else None
+        if config.enable_transformer_trainer:
+            from transformers import EarlyStoppingCallback, set_seed, Trainer
+
+            from libmultilabel.nn.data_utils import generate_transformer_batch
+            from libmultilabel.nn.nn_utils import init_training_args, compute_metrics
+
+            training_args = init_training_args(config)
+
+            set_seed(training_args.seed)
+
+            self.train_dataset = self._get_dataset_loader(split='train', shuffle=config.shuffle).dataset
+            self.val_dataset = self._get_dataset_loader(split='val').dataset
+            self.test_dataset = self._get_dataset_loader(split='test').dataset
+            self.trainer = Trainer(
+                model=self.model.network.lm,
+                args=training_args,
+                train_dataset=self.train_dataset,
+                eval_dataset=self.val_dataset,
+                compute_metrics=compute_metrics,
+                tokenizer=self.tokenizer,
+                data_collator=generate_transformer_batch,
+                callbacks=[EarlyStoppingCallback(early_stopping_patience=config.patience)]
+            )
+        else:
+            self.trainer = init_trainer(checkpoint_dir=self.checkpoint_dir,
+                                        epochs=config.epochs,
+                                        patience=config.patience,
+                                        val_metric=config.val_metric,
+                                        silent=config.silent,
+                                        use_cpu=config.cpu,
+                                        limit_train_batches=config.limit_train_batches,
+                                        limit_val_batches=config.limit_val_batches,
+                                        limit_test_batches=config.limit_test_batches,
+                                        search_params=search_params,
+                                        save_checkpoints=save_checkpoints,
+                                        accumulate_grad_batches=config.accumulate_grad_batches)
+            callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, ModelCheckpoint)]
+            self.checkpoint_callback = callbacks[0] if callbacks else None
 
         # Dump config to log
         dump_log(self.log_path, config=config)
@@ -177,7 +203,9 @@ class TorchTrainer:
             data_workers=self.config.data_workers,
             tokenizer=self.tokenizer,
             add_special_tokens=self.config.add_special_tokens,
-            hierarchical=self.config.hierarchical
+            hierarchical=self.config.hierarchical,
+            enable_transformer_trainer=self.config.enable_transformer_trainer,
+            multi_class=self.config.multi_class
         )
 
     def train(self):
@@ -185,6 +213,17 @@ class TorchTrainer:
         process is finished.
         """
         assert self.trainer is not None, "Please make sure the trainer is successfully initialized by `self._setup_trainer()`."
+        if self.config.enable_transformer_trainer:
+            # Training
+            train_result = self.trainer.train()
+            metrics = train_result.metrics
+            metrics['train_samples'] = len(self.train_dataset)
+            self.trainer.save_model()
+            self.trainer.log_metrics('train', metrics)
+            self.trainer.save_metrics('train', metrics)
+            self.trainer.save_state()
+            return
+
         train_loader = self._get_dataset_loader(split='train', shuffle=self.config.shuffle)
 
         if 'val' not in self.datasets:
@@ -219,6 +258,19 @@ class TorchTrainer:
             dict: Scores for all metrics in the dictionary format.
         """
         assert 'test' in self.datasets and self.trainer is not None
+
+        if self.config.enable_transformer_trainer:
+            # Validation
+            metrics = self.trainer.evaluate(eval_dataset=self.val_dataset)
+            metrics['val_samples'] = len(self.val_dataset)
+            self.trainer.log_metrics('val', metrics)
+            self.trainer.save_metrics('val', metrics)
+            # Testing
+            predictions, labels, metrics = self.trainer.predict(self.test_dataset, metric_key_prefix='test')
+            metrics['test_samples'] = len(self.test_dataset)
+            self.trainer.log_metrics('test', metrics)
+            self.trainer.save_metrics('test', metrics)
+            return
 
         logging.info(f'Testing on {split} set.')
         test_loader = self._get_dataset_loader(split=split)

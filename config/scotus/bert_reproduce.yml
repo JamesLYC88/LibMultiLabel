@@ -10,7 +10,7 @@ accumulate_grad_batches: 4
 
 # train
 seed: 1337
-epochs: 15
+epochs: 20
 batch_size: 2
 optimizer: adamw
 learning_rate: 0.00003

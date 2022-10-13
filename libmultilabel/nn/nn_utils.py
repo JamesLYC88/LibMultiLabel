@@ -184,3 +184,53 @@ def set_seed(seed):
             seed_everything(seed=seed, workers=True)
         else:
             logging.warning('the random seed should be a non-negative integer')
+
+
+from transformers import TrainingArguments
+def init_training_args(config):
+    """Initialize huggingface training arguments.
+
+    Args:
+        config (dict)
+
+    Returns:
+        dict: huggingface training arguments.
+    """
+
+    training_args = TrainingArguments(
+        output_dir = \
+            f"{config.result_dir}/{config.data_name}/{config.network_config['lm_weight']}/seed_{config.seed}",
+    )
+    training_args.model_name_or_path = config.network_config['lm_weight']
+    training_args.do_lower_case = True
+    training_args.do_train = True
+    training_args.do_eval = True
+    training_args.do_pred = True
+    training_args.overwrite_output_dir = True
+    training_args.load_best_model_at_end = True
+    training_args.metric_for_best_model = config.val_metric
+    training_args.greater_is_better = True
+    training_args.evaluation_strategy = 'epoch'
+    training_args.save_strategy = 'epoch'
+    training_args.save_total_limit = 5
+    training_args.num_train_epochs = config.epochs
+    training_args.learning_rate = config.learning_rate
+    training_args.per_device_train_batch_size = config.batch_size
+    training_args.per_device_eval_batch_size = config.batch_size
+    training_args.seed = config.seed
+    if not config.hierarchical:  # hierarchical methods will lead to errors
+        training_args.fp16 = True
+        training_args.fp16_full_eval = True
+    training_args.gradient_accumulation_steps = config.accumulate_grad_batches
+    training_args.eval_accumulation_steps = config.accumulate_grad_batches
+    return training_args
+
+
+from sklearn.metrics import f1_score
+from transformers import EvalPrediction
+def compute_metrics(p: EvalPrediction):
+    logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
+    preds = np.argmax(logits, axis=1)
+    macro_f1 = f1_score(y_true=p.label_ids, y_pred=preds, average='macro', zero_division=0)
+    micro_f1 = f1_score(y_true=p.label_ids, y_pred=preds, average='micro', zero_division=0)
+    return {'Macro-F1': macro_f1, 'Micro-F1': micro_f1}
