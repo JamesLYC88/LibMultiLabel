@@ -226,6 +226,7 @@ def init_training_args(config):
     return training_args
 
 
+import numpy as np
 from sklearn.metrics import f1_score
 from transformers import EvalPrediction
 def compute_metrics(p: EvalPrediction):
