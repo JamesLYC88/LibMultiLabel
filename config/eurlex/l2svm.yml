@@ -1,5 +1,5 @@
 # data
-data_dir: data/eurlex
+data_dir: data_linear/eurlex
 data_name: eurlex
 
 # train

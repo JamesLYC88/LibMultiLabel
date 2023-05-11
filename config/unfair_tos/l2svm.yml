@@ -1,5 +1,5 @@
 # data
-data_dir: data/unfair_tos
+data_dir: data_linear/unfair_tos
 data_name: unfair_tos
 
 # train

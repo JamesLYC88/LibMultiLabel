@@ -1,5 +1,5 @@
 # data
-data_dir: data/ecthr_a
+data_dir: data_linear/ecthr_a
 data_name: ecthr_a
 
 # train

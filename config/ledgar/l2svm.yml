@@ -1,5 +1,5 @@
 # data
-data_dir: data/ledgar
+data_dir: data_linear/ledgar
 data_name: ledgar
 
 # train

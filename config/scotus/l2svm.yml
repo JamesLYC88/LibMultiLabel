@@ -1,5 +1,5 @@
 # data
-data_dir: data/scotus
+data_dir: data_linear/scotus
 data_name: scotus
 
 # train
