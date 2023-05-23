@@ -1,5 +1,5 @@
 # data
-data_dir: data/ecthr_a
+data_dir: data_nn/ecthr_a
 data_name: ecthr_a
 min_vocab_freq: 1
 max_seq_length: 512
@@ -17,7 +17,7 @@ patience: 5
 
 # eval
 eval_batch_size: 8
-monitor_metrics: ['Macro-F1', 'Micro-F1']
+monitor_metrics: ['Micro-F1', 'Macro-F1']
 val_metric: Micro-F1
 
 # model

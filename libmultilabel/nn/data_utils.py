@@ -62,7 +62,7 @@ class TextDataset(Dataset):
                         self.max_segments - len(case_encodings['attention_mask']))),
                     'label': \
                         torch.as_tensor(int(data['label'][0])) if self.enable_transformer_trainer and self.multi_class \
-                        else torch.FloatTensor(self.label_binarizer.transform([data['label']])[0])
+                        else torch.IntTensor(self.label_binarizer.transform([data['label']])[0])
                 }
             else:
                 case_encodings = self.tokenizer(data['text'],
@@ -75,7 +75,7 @@ class TextDataset(Dataset):
                     'attention_mask': torch.LongTensor(case_encodings['attention_mask']),
                     'label': \
                         torch.as_tensor(int(data['label'][0])) if self.enable_transformer_trainer and self.multi_class \
-                        else torch.FloatTensor(self.label_binarizer.transform([data['label']])[0])
+                        else torch.IntTensor(self.label_binarizer.transform([data['label']])[0])
                 }
         else:
             input_ids = [self.word_dict[word] for word in data['text']]
