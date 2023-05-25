@@ -1,25 +1,23 @@
 # data
-data_dir: data/ecthr_b_case
-data_name: ecthr_b_case
+data_dir: data_nn/ledgar
+data_name: ledgar
 min_vocab_freq: 1
 max_seq_length: 512
 include_test_labels: true
 add_special_tokens: true
-hierarchical: true
-accumulate_grad_batches: 4
 
 # train
 seed: 1337
-epochs: 15
-batch_size: 2
+epochs: 20
+batch_size: 8
 optimizer: adamw
 learning_rate: 0.00003
 weight_decay: 0
 patience: 5
 
 # eval
-eval_batch_size: 2
-monitor_metrics: ['Micro-F1', 'Macro-F1', 'Another-Macro-F1', 'P@1', 'P@5', 'RP@5', 'nDCG@5']
+eval_batch_size: 8
+monitor_metrics: ['Micro-F1', 'Macro-F1']
 val_metric: Micro-F1
 
 # model

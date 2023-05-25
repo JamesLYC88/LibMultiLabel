@@ -46,7 +46,7 @@ elif [[ " ${bert_algo_list[*]} " =~ " ${algo} " ]]; then
             python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1 --epochs 1
         else
             python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1 --epochs 1 --enable_transformer_trainer
-        fi 
+        fi
     else
         echo "Should never reach here..."
         exit
