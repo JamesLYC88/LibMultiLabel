@@ -3,26 +3,40 @@ import os
 import re
 from datasets import load_dataset
 
-from ocp import config_list, config2task, config2hier, split_list, split2name
-
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-dp', '--data_path', type=str, default='data')
-    parser.add_argument('-f', '--format', type=str, choices=['linear', 'nn', 'case'], required=True)
+    parser.add_argument('-dl', '--data_list', type=list,
+        default=['ecthr_a', 'ecthr_b', 'scotus', 'eurlex', 'ledgar', 'unfair_tos'])
+    parser.add_argument('-sl', '--split_list', type=list, default = ['train', 'validation', 'test'])
+    parser.add_argument('-dp', '--data_path_prefix', type=str, default='data')
+    parser.add_argument('-f', '--format', type=str, choices=['linear', 'nn', 'hier'], required=True)
     args = parser.parse_args()
     return args
 
 
-def get_texts(config, dataset, case=False):
-    if 'ecthr' in config:
-        if not case:
+def data2task(data):
+    return 'multi_label' if data not in ['scotus', 'ledgar'] else 'multi_class'
+
+
+def data2hier(data):
+    return True if data in ['ecthr_a', 'ecthr_b', 'scotus'] else False
+
+
+def split2name(split):
+    _split2name = {'train': 'train.txt', 'validation': 'valid.txt', 'test': 'test.txt'}
+    return _split2name[split]
+
+
+def get_texts(data, dataset, hier=False):
+    if 'ecthr' in data:
+        if not hier:
             texts = [' '.join(text) for text in dataset['text']]
         else:
-            texts = [' [CASE] '.join(text) for text in dataset['text']]
+            texts = [' [HIER] '.join(text) for text in dataset['text']]
         return [' '.join(text.split()) for text in texts]
-    elif config == 'scotus' and case:
-        texts = [' [CASE] '.join(re.split('\n{2,}', text)) for text in dataset['text']]
+    elif data == 'scotus' and hier:
+        texts = [' [HIER] '.join(re.split('\n{2,}', text)) for text in dataset['text']]
         # Huggingface tokenizer ignores newline and tab,
         # so it's okay to replace them with a space here.
         for i in range(len(texts)):
@@ -30,18 +44,18 @@ def get_texts(config, dataset, case=False):
             texts[i] = texts[i].replace('\r', ' ')
             texts[i] = texts[i].replace('\t', ' ')
         return texts
-    elif config == 'case_hold':
+    elif data == 'case_hold':
         return [contexts[0] + ' [SEP] '.join(holdings)
                 for contexts, holdings in zip(dataset['contexts'], dataset['endings'])]
     else:
         return [' '.join(text.split()) for text in dataset['text']]
 
 
-def get_labels(config, dataset, task):
+def get_labels(data, dataset, task):
     if task == 'multi_class':
         return list(map(str, dataset['label']))
     else:
-        if config == 'eurlex':
+        if data == 'eurlex':
             return [' '.join(map(str, [l for l in label if l < 100])) for label in dataset['labels']]
         else:
             return [' '.join(map(str, label)) for label in dataset['labels']]
@@ -60,40 +74,40 @@ def save_data(data_path, data):
 def main():
     # args
     args = get_args()
-    data_path = f'{args.data_path}_{args.format}'
+    data_path = f'{args.data_path_prefix}_{args.format}'
     os.makedirs(data_path, exist_ok=True)
 
-    # parse
-    for config in config_list:
-        if args.format == 'case' and not config2hier[config]:
+    # generate
+    for data in args.data_list:
+        if args.format == 'hier' and not data2hier(data):
             continue
-        config_path = os.path.join(data_path, config)
-        os.makedirs(config_path, exist_ok=True)
+        data_path = os.path.join(data_path, data)
+        os.makedirs(data_path, exist_ok=True)
         processed_data = {}
-        for split in split_list:
-            dataset = load_dataset('lex_glue', config, split=split)
-            texts = get_texts(config, dataset, case=args.format == 'case')
-            labels = get_labels(config, dataset, config2task[config])
+        for split in args.split_list:
+            dataset = load_dataset('lex_glue', data, split=split)
+            texts = get_texts(data, dataset, hier=args.format == 'hier')
+            labels = get_labels(data, dataset, data2task(data))
             assert len(texts) == len(labels)
-            print(f'{config} ({split}): num_instance = {len(texts)}')
+            print(f'{data} ({split}): num_instance = {len(texts)}')
             processed_data[split] = {'text': texts, 'labels': labels}
         # format
         if args.format == 'linear':
             # train
-            train_path = os.path.join(config_path, split2name['train'])
+            train_path = os.path.join(data_path, split2name('train'))
             train_data = {
                 'text': processed_data['train']['text'] + processed_data['validation']['text'],
                 'labels': processed_data['train']['labels'] + processed_data['validation']['labels']
             }
             save_data(train_path, train_data)
             # test
-            test_path = os.path.join(config_path, split2name['test'])
+            test_path = os.path.join(data_path, split2name('test'))
             test_data = processed_data['test']
             save_data(test_path, test_data)
-        elif args.format == 'nn' or args.format == 'case':
+        elif args.format == 'nn' or args.format == 'hier':
             # train/validation/test
             for split in processed_data:
-                split_path = os.path.join(config_path, split2name[split])
+                split_path = os.path.join(data_path, split2name(split))
                 save_data(split_path, processed_data[split])
 
 
