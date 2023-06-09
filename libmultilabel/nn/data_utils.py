@@ -49,7 +49,7 @@ class TextDataset(Dataset):
 
         if self.tokenizer is not None: # transformers tokenizer
             if self.hierarchical:
-                case = data['text'].split(' [CASE] ')  # align with data generation
+                case = data['text'].split(' [HIER] ')  # align with data generation
                 case_encodings = self.tokenizer(case[:self.max_segments],
                                                 add_special_tokens=self.add_special_tokens,
                                                 padding='max_length',
