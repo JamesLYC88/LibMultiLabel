@@ -1,5 +1,5 @@
 # data
-data_dir: data_case/ecthr_b
+data_dir: data_hier/ecthr_b
 data_name: ecthr_b
 min_vocab_freq: 1
 max_seq_length: 512

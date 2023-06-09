@@ -1,5 +1,5 @@
 # data
-data_dir: data_case/scotus
+data_dir: data_hier/scotus
 data_name: scotus
 min_vocab_freq: 1
 max_seq_length: 512
