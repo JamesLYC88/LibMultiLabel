@@ -33,19 +33,16 @@ if [[ " ${linear_algo_list[*]} " =~ " ${algo} " ]]; then
         exit
     fi
 elif [[ " ${bert_algo_list[*]} " =~ " ${algo} " ]]; then
-    ###########################################
-    # Comment out epochs = 1 before releasing #
-    ###########################################
     if [[ " ${multilabel_unlabeled_data_list[*]} " =~ " ${data} " ]]; then
-        python3 main.py --config config/${data}/${algo}.yml --zero --seed 1 --epochs 1
+        python3 main.py --config config/${data}/${algo}.yml --zero --seed 1
     elif [[ " ${multilabel_labeled_data_list[*]} " =~ " ${data} " ]]; then
-        python3 main.py --config config/${data}/${algo}.yml --seed 1 --epochs 1
+        python3 main.py --config config/${data}/${algo}.yml --seed 1
     elif [[ " ${multiclass_labeled_data_list[*]} " =~ " ${data} " ]]; then
         huggingface_trainer_algo_list=(bert_reproduced)
         if [[ ! " ${huggingface_trainer_algo_list[*]} " =~ " ${algo} " ]]; then
-            python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1 --epochs 1
+            python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1
         else
-            python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1 --epochs 1 --enable_transformer_trainer
+            python3 main.py --config config/${data}/${algo}.yml --multi_class --enable_ce_loss --seed 1 --enable_transformer_trainer
         fi
     else
         echo "Should never reach here..."
