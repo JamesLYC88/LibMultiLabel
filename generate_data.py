@@ -9,7 +9,7 @@ def get_args():
     parser.add_argument('-dl', '--data_list', type=list,
         default=['ecthr_a', 'ecthr_b', 'scotus', 'eurlex', 'ledgar', 'unfair_tos'])
     parser.add_argument('-sl', '--split_list', type=list, default = ['train', 'validation', 'test'])
-    parser.add_argument('-dp', '--data_path_prefix', type=str, default='data')
+    parser.add_argument('-ddp', '--data_dir_prefix', type=str, default='data')
     parser.add_argument('-f', '--format', type=str, choices=['linear', 'nn', 'hier'], required=True)
     args = parser.parse_args()
     return args
@@ -74,14 +74,14 @@ def save_data(data_path, data):
 def main():
     # args
     args = get_args()
-    data_path = f'{args.data_path_prefix}_{args.format}'
-    os.makedirs(data_path, exist_ok=True)
+    data_dir = f'{args.data_dir_prefix}_{args.format}'
+    os.makedirs(data_dir, exist_ok=True)
 
     # generate
     for data in args.data_list:
         if args.format == 'hier' and not data2hier(data):
             continue
-        data_path = os.path.join(data_path, data)
+        data_path = os.path.join(data_dir, data)
         os.makedirs(data_path, exist_ok=True)
         processed_data = {}
         for split in args.split_list:
