@@ -1,5 +1,5 @@
 # data
-data_dir: data/unfair_tos
+data_dir: data_nn/unfair_tos
 data_name: unfair_tos
 min_vocab_freq: 1
 max_seq_length: ['grid_search', [128, 512]]
@@ -73,3 +73,4 @@ add_special_tokens: true
 enable_ce_loss: false
 hierarchical: false
 accumulate_grad_batches: 1
+enable_transformer_trainer: false
