@@ -4,8 +4,8 @@
 
 It is optional but highly recommended to create a virtual environment. For example, you can first refer to the [link](https://docs.conda.io/en/latest/miniconda.html) for the installation guidances of Miniconda and then create a virtual environment as follows.
 ```bash
-conda create -n Baseline python=3.8
-conda activate Baseline
+conda create -n baseline python=3.8
+conda activate baseline
 ```
 
 We recommend using **Python 3.8** because that is the version we used in our experiments. Please also install the following packages.
