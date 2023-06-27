@@ -8,17 +8,17 @@ add_special_tokens: true
 
 # train
 seed: 1337
-epochs: 50
-batch_size: 16
+epochs: 100
+batch_size: 32
 optimizer: adamw
-learning_rate: ['grid_search', [0.00002, 0.00003, 0.00005]]
+learning_rate: ['grid_search', [0.00002, 0.00003, 0.00004, 0.00005]]
 momentum: 0
 weight_decay: 0
-patience: 10
+patience: 100
 shuffle: true
 
 # eval
-eval_batch_size: 16
+eval_batch_size: 32
 monitor_metrics: ['RP@5']
 val_metric: RP@5
 
@@ -26,7 +26,7 @@ val_metric: RP@5
 model_name: BERT
 init_weight: null
 network_config:
-  dropout: ['grid_search', [0.1, 0.2]]
+  dropout: 0.1
   lm_weight: bert-base-uncased
   lm_window: 512
 
