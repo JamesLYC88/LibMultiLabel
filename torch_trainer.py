@@ -109,6 +109,12 @@ class TorchTrainer:
         if checkpoint_path is not None:
             logging.info(f'Loading model from `{checkpoint_path}`...')
             self.model = Model.load_from_checkpoint(checkpoint_path)
+            ###
+            from torchmetrics import MetricCollection
+            from libmultilabel.nn.metrics import RPrecision, Loss
+            metrics = {'Loss': Loss(), 'RP@5': RPrecision(top_k=5)}
+            self.model.eval_metric = MetricCollection(metrics)
+            ###
             self.model.log_path = self.log_path # correct log_path
         else:
             logging.info('Initialize model from scratch.')
