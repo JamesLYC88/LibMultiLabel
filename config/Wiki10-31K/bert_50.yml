@@ -1,0 +1,33 @@
+# data
+data_dir: data/Wiki10-31K
+data_name: Wiki10-31K
+min_vocab_freq: 1
+max_seq_length: 512
+include_test_labels: false
+add_special_tokens: true
+
+# train
+seed: 1337
+epochs: 50
+batch_size: 32
+optimizer: adamw
+learning_rate: 5e-05
+weight_decay: 0
+patience: 50
+shuffle: true
+
+# eval
+eval_batch_size: 32
+monitor_metrics: ['P@1', 'P@3', 'P@5', 'RP@15', 'nDCG@15', 'Loss']
+val_metric: RP@15
+
+# model
+model_name: BERT
+init_weight: null
+network_config:
+  dropout: 0.1
+  lm_weight: bert-base-uncased
+  lm_window: 512
+
+# pretrained vocab / embeddings
+embed_file: null
